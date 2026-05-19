@@ -13,6 +13,7 @@ The card presents the loaded beer as a PerfectDraft-style pump with a front view
 - Freshness days remaining
 - Loaded beer name, image, brewery/style/ABV attributes
 - Hover beer metadata on the pump for stock, price, serving notes, reviews, and pairings
+- Optional pump/keg view and optional controls section
 - Auto-discovery for Taproom entities, with manual entity overrides
 - Visual card editor
 - Theme-aware styling
@@ -29,17 +30,17 @@ The card presents the loaded beer as a PerfectDraft-style pump with a front view
 HACS serves the card from:
 
 ```text
-/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js?v=6
+/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js?v=7
 ```
 
-The trailing `v=6` is intentional. Increment it when updating the card if Home Assistant or the browser keeps serving an older cached copy.
+The trailing `v=7` is intentional. Increment it when updating the card if Home Assistant or the browser keeps serving an older cached copy.
 
 ### Manual
 
 Copy `perfectdraft-taproom-card.js` to your Home Assistant `www` directory and add it as a dashboard resource:
 
 ```yaml
-url: /local/perfectdraft-taproom-card.js?v=6
+url: /local/perfectdraft-taproom-card.js?v=7
 type: module
 ```
 
@@ -66,8 +67,20 @@ Optional display settings:
 
 ```yaml
 compact: false
+show_pump: true
 show_details: true
+show_controls: false
 name: PerfectDraft Taproom
+```
+
+Optional control entities:
+
+```yaml
+apply_ideal_button_entity: button.perfectdraft_pro_apply_ideal_temperature
+refresh_metadata_button_entity: button.perfectdraft_pro_refresh_metadata
+eco_mode_entity: switch.perfectdraft_pro_eco_mode
+mode_select_entity: select.perfectdraft_pro_mode
+target_temperature_control_entity: number.perfectdraft_pro_target_temperature
 ```
 
 ## Entity Notes
@@ -80,5 +93,5 @@ This repository is structured as a HACS Dashboard plugin. `hacs.json` points HAC
 
 When releasing a visual/card update, bump both:
 
-- The `?v=6` query string shown in the resource URL examples.
+- The `?v=7` query string shown in the resource URL examples.
 - `PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER` near the top of `perfectdraft-taproom-card.js`.

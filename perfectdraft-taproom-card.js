@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.5";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.6";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 6;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 7;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -10,7 +10,9 @@ class PerfectDraftTaproomCard extends HTMLElement {
   static getStubConfig() {
     return {
       type: "custom:perfectdraft-taproom-card",
+      show_pump: true,
       show_details: true,
+      show_controls: false,
     };
   }
 
@@ -19,7 +21,9 @@ class PerfectDraftTaproomCard extends HTMLElement {
       throw new Error("Invalid configuration");
     }
     this._config = {
+      show_pump: true,
       show_details: true,
+      show_controls: false,
       compact: false,
       ...config,
     };
@@ -110,7 +114,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
     this.innerHTML = `
       <ha-card class="${this._config.compact ? "compact" : ""}">
         <style>${this._styles()}</style>
-        <button class="card-button" type="button" aria-label="Open beer details">
+        <div class="card-button" role="button" tabindex="0" aria-label="Open beer details">
           <section class="hero">
             <div class="beer-art ${image ? "" : "empty"}">
               ${image ? `<img src="${this._escape(image)}" alt="">` : `<ha-icon icon="mdi:beer"></ha-icon>`}
@@ -122,7 +126,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
             </div>
           </section>
 
-          <section class="keg-stage">
+          ${this._config.show_pump ? `
+            <section class="keg-stage">
             <div class="freshness" style="--freshness: ${freshnessPercent}%">
               <span>${Number.isFinite(freshness) ? Math.max(0, Math.round(freshness)) : "—"}</span>
               <small>days fresh</small>
@@ -150,7 +155,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
               </div>
               <div class="machine-base"></div>
             </div>
-          </section>
+            </section>
+          ` : ""}
 
           ${this._config.show_details ? `
             <section class="stats">
@@ -158,11 +164,105 @@ class PerfectDraftTaproomCard extends HTMLElement {
               <div><span>Target</span><strong>${this._formatNumber(targetTemp, "°C", 0)}</strong></div>
             </section>
           ` : ""}
-        </button>
+
+          ${this._renderControls()}
+        </div>
       </ha-card>
     `;
 
-    this.querySelector(".card-button")?.addEventListener("click", () => this._fireAction());
+    const cardButton = this.querySelector(".card-button");
+    cardButton?.addEventListener("click", () => this._fireAction());
+    cardButton?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      this._fireAction();
+    });
+    this._bindControls();
+  }
+
+  _state(entityId) {
+    return entityId ? this._hass?.states?.[entityId] : undefined;
+  }
+
+  _renderControls() {
+    if (!this._config?.show_controls) return "";
+
+    const buttons = [
+      ["apply_ideal_button_entity", "Apply ideal", "mdi:thermometer-check"],
+      ["refresh_metadata_button_entity", "Refresh", "mdi:refresh"],
+    ].filter(([key]) => this._state(this._config[key]));
+
+    const eco = this._state(this._config.eco_mode_entity);
+    const mode = this._state(this._config.mode_select_entity);
+    const targetControl = this._state(this._config.target_temperature_control_entity);
+    const hasControls = buttons.length || eco || mode || targetControl;
+
+    return `
+      <section class="controls" aria-label="Taproom controls">
+        ${hasControls ? "" : `<div class="control-empty">No controls configured</div>`}
+        ${buttons.map(([key, label, icon]) => `
+          <button class="control-button" type="button" data-button-entity="${this._escape(this._config[key])}">
+            <ha-icon icon="${icon}"></ha-icon>
+            <span>${label}</span>
+          </button>
+        `).join("")}
+        ${eco ? `
+          <button class="control-button" type="button" data-switch-entity="${this._escape(eco.entity_id)}">
+            <ha-icon icon="${eco.state === "on" ? "mdi:leaf" : "mdi:leaf-off"}"></ha-icon>
+            <span>Eco ${eco.state === "on" ? "on" : "off"}</span>
+          </button>
+        ` : ""}
+        ${mode ? `
+          <div class="control-pill">
+            <ha-icon icon="mdi:tune-variant"></ha-icon>
+            <span>${this._escape(this._formatState(mode))}</span>
+          </div>
+        ` : ""}
+        ${targetControl ? `
+          <div class="stepper">
+            <button type="button" data-number-entity="${this._escape(targetControl.entity_id)}" data-delta="-0.5" aria-label="Decrease target temperature">
+              <ha-icon icon="mdi:minus"></ha-icon>
+            </button>
+            <strong>${this._formatState(targetControl)}</strong>
+            <button type="button" data-number-entity="${this._escape(targetControl.entity_id)}" data-delta="0.5" aria-label="Increase target temperature">
+              <ha-icon icon="mdi:plus"></ha-icon>
+            </button>
+          </div>
+        ` : ""}
+      </section>
+    `;
+  }
+
+  _bindControls() {
+    this.querySelector(".controls")?.addEventListener("click", (event) => event.stopPropagation());
+    this.querySelector(".controls")?.addEventListener("keydown", (event) => event.stopPropagation());
+    this.querySelectorAll("[data-button-entity]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this._hass.callService("button", "press", { entity_id: button.dataset.buttonEntity });
+      });
+    });
+    this.querySelectorAll("[data-switch-entity]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const entityId = button.dataset.switchEntity;
+        const state = this._state(entityId)?.state;
+        this._hass.callService("switch", state === "on" ? "turn_off" : "turn_on", { entity_id: entityId });
+      });
+    });
+    this.querySelectorAll("[data-number-entity]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const entity = this._state(button.dataset.numberEntity);
+        const current = this._stateNumber(entity);
+        const delta = Number(button.dataset.delta);
+        if (!Number.isFinite(current) || !Number.isFinite(delta)) return;
+        this._hass.callService("number", "set_value", {
+          entity_id: entity.entity_id,
+          value: current + delta,
+        });
+      });
+    });
   }
 
   _attrValue(value) {
@@ -628,6 +728,84 @@ class PerfectDraftTaproomCard extends HTMLElement {
         line-height: 1.1;
       }
 
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .control-button,
+      .control-pill,
+      .stepper {
+        min-height: 42px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.07);
+        color: inherit;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+
+      .control-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 0;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .control-button ha-icon,
+      .control-pill ha-icon {
+        --mdc-icon-size: 18px;
+        color: #91f0dc;
+      }
+
+      .control-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 10px;
+        color: rgba(247, 251, 251, 0.78);
+        font-size: 0.86rem;
+      }
+
+      .stepper {
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr) 38px;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      .stepper button {
+        height: 100%;
+        border: 0;
+        background: rgba(255, 255, 255, 0.06);
+        color: inherit;
+        cursor: pointer;
+      }
+
+      .stepper ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .stepper strong {
+        text-align: center;
+        font-size: 0.9rem;
+      }
+
+      .control-empty {
+        grid-column: 1 / -1;
+        padding: 10px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(247, 251, 251, 0.62);
+        font-size: 0.8rem;
+        text-align: center;
+      }
+
       ha-card.compact .card-button {
         padding: 14px;
       }
@@ -702,9 +880,51 @@ class PerfectDraftTaproomCard extends HTMLElement {
   }
 }
 
+const CARD_EDITOR_SCHEMA = [
+  { name: "name", selector: { text: {} } },
+  { name: "beer_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "level_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "temperature_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "target_temperature_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "freshness_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "show_pump", selector: { boolean: {} } },
+  { name: "show_details", selector: { boolean: {} } },
+  { name: "compact", selector: { boolean: {} } },
+  { name: "show_controls", selector: { boolean: {} } },
+  { name: "apply_ideal_button_entity", selector: { entity: { domain: "button" } } },
+  { name: "refresh_metadata_button_entity", selector: { entity: { domain: "button" } } },
+  { name: "eco_mode_entity", selector: { entity: { domain: "switch" } } },
+  { name: "mode_select_entity", selector: { entity: { domain: "select" } } },
+  { name: "target_temperature_control_entity", selector: { entity: { domain: "number" } } },
+];
+
+const CARD_EDITOR_LABELS = {
+  name: "Card title",
+  beer_entity: "Beer entity",
+  level_entity: "Keg remaining entity",
+  temperature_entity: "Current temperature entity",
+  target_temperature_entity: "Target temperature entity",
+  freshness_entity: "Freshness entity",
+  show_pump: "Show pump/keg view",
+  show_details: "Show temperature row",
+  compact: "Compact mode",
+  show_controls: "Show controls",
+  apply_ideal_button_entity: "Apply ideal temperature button",
+  refresh_metadata_button_entity: "Refresh metadata button",
+  eco_mode_entity: "Eco mode switch",
+  mode_select_entity: "Mode select",
+  target_temperature_control_entity: "Target temperature number",
+};
+
 class PerfectDraftTaproomCardEditor extends HTMLElement {
   setConfig(config) {
-    this._config = { show_details: true, compact: false, ...config };
+    this._config = {
+      show_pump: true,
+      show_details: true,
+      show_controls: false,
+      compact: false,
+      ...config,
+    };
     this._render();
   }
 
@@ -715,96 +935,30 @@ class PerfectDraftTaproomCardEditor extends HTMLElement {
 
   _render() {
     if (!this._config) return;
-    const fields = [
-      ["name", "Name", "text"],
-      ["beer_entity", "Beer entity", "entity"],
-      ["level_entity", "Keg remaining entity", "entity"],
-      ["temperature_entity", "Current temperature entity", "entity"],
-      ["target_temperature_entity", "Target temperature entity", "entity"],
-      ["freshness_entity", "Freshness entity", "entity"],
-      ["show_details", "Show detail row", "checkbox"],
-      ["compact", "Compact mode", "checkbox"],
-    ];
     this.innerHTML = `
       <style>
         .editor {
-          display: grid;
-          gap: 12px;
-        }
-        label {
-          display: grid;
-          gap: 4px;
-          color: var(--primary-text-color);
-        }
-        span {
-          font-size: 0.86rem;
-          color: var(--secondary-text-color);
-        }
-        ha-textfield,
-        ha-entity-picker {
-          width: 100%;
-        }
-        .toggle {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
+          display: block;
         }
       </style>
-      <div class="editor">
-        ${fields.map(([key, label, type]) => this._field(key, label, type)).join("")}
-      </div>
+      <ha-form class="editor"></ha-form>
     `;
-    this.querySelectorAll("ha-entity-picker").forEach((picker) => {
-      picker.hass = this._hass;
-    });
-    this.querySelectorAll("[data-config-key]").forEach((input) => {
-      input.addEventListener("value-changed", (event) => this._changed(input, event));
-      input.addEventListener("change", (event) => this._changed(input, event));
-    });
+
+    const form = this.querySelector("ha-form");
+    form.hass = this._hass;
+    form.data = this._config;
+    form.schema = CARD_EDITOR_SCHEMA;
+    form.computeLabel = (schema) => CARD_EDITOR_LABELS[schema.name] || schema.name;
+    form.addEventListener("value-changed", (event) => this._changed(event));
   }
 
-  _field(key, label, type) {
-    const value = this._config[key] ?? "";
-    if (type === "checkbox") {
-      return `
-        <label class="toggle">
-          <span>${label}</span>
-          <ha-switch data-config-key="${key}" ${value ? "checked" : ""}></ha-switch>
-        </label>
-      `;
-    }
-    if (type === "entity") {
-      return `
-        <label>
-          <span>${label}</span>
-          <ha-entity-picker
-            data-config-key="${key}"
-            value="${value}"
-            allow-custom-entity>
-          </ha-entity-picker>
-        </label>
-      `;
-    }
-    return `
-      <label>
-        <span>${label}</span>
-        <ha-textfield data-config-key="${key}" value="${value}"></ha-textfield>
-      </label>
-    `;
-  }
-
-  _changed(input, event) {
-    const key = input.dataset.configKey;
-    const value = input.tagName.toLowerCase() === "ha-switch"
-      ? input.checked
-      : event.detail?.value ?? input.value;
-    const config = { ...this._config };
-    if (value === "" || value === undefined || value === null) {
-      delete config[key];
-    } else {
-      config[key] = value;
-    }
+  _changed(event) {
+    const config = { ...event.detail.value };
+    Object.keys(config).forEach((key) => {
+      if (config[key] === "" || config[key] === undefined || config[key] === null) {
+        delete config[key];
+      }
+    });
     this._config = config;
     this.dispatchEvent(new CustomEvent("config-changed", {
       detail: { config },
