@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.1";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.2";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 2;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 3;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -147,7 +147,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
                 <div class="machine-highlight"></div>
                 <div class="display-panel">
                   <span>${this._formatNumber(currentTemp, "°", 0)}</span>
-                  <small>current</small>
+                  <small>${this._formatNumber(targetTemp, "°", 0)} target</small>
                 </div>
                 <div class="view-window">
                   <div class="window-fill"></div>
@@ -158,8 +158,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
                   </div>
                 </div>
                 <div class="target-badge ${tempClass}">
-                  <small>target</small>
-                  <span>${this._formatNumber(targetTemp, "°", 0)}</span>
+                  <small>left</small>
+                  <span>${this._formatNumber(level, "%", 0)}</span>
                 </div>
                 <div class="drip-tray"></div>
               </div>
@@ -305,16 +305,16 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .keg-stage {
         position: relative;
-        min-height: 292px;
+        min-height: 306px;
         display: grid;
         place-items: center;
         padding: 16px 0 8px;
       }
 
       .machine {
-        width: min(72%, 244px);
-        min-width: 188px;
-        height: 270px;
+        width: min(76%, 265px);
+        min-width: 206px;
+        height: 286px;
         position: relative;
         filter: drop-shadow(0 20px 26px rgba(0, 0, 0, 0.42));
       }
@@ -322,129 +322,156 @@ class PerfectDraftTaproomCard extends HTMLElement {
       .tap-handle {
         position: absolute;
         left: 50%;
-        top: 0;
-        width: 22px;
-        height: 74px;
+        top: 2px;
+        width: 24px;
+        height: 70px;
         transform: translateX(-50%);
-        border-radius: 14px 14px 8px 8px;
-        background: linear-gradient(90deg, #05090a, #5c666b 42%, #151b1d);
+        border-radius: 11px 11px 9px 9px;
+        background: linear-gradient(90deg, #050607, #5a6266 44%, #090b0c);
         border: 2px solid rgba(255, 255, 255, 0.22);
-        z-index: 4;
+        box-shadow: inset 0 -10px 12px rgba(0, 0, 0, 0.52);
+        z-index: 8;
       }
 
       .tap-neck {
         position: absolute;
         left: 50%;
-        top: 62px;
-        width: 18px;
-        height: 38px;
+        top: 66px;
+        width: 24px;
+        height: 24px;
         transform: translateX(-50%);
-        border-radius: 9px;
-        background: linear-gradient(90deg, #b9c3c5, #f6fbfb 48%, #7b898d);
-        z-index: 5;
+        border-radius: 50%;
+        background: radial-gradient(circle at 45% 35%, #ffffff, #b9c3c5 48%, #5d666a 70%);
+        z-index: 7;
       }
 
       .tap-spout {
         position: absolute;
-        left: calc(50% + 8px);
-        top: 84px;
-        width: 58px;
-        height: 19px;
-        border-radius: 0 14px 14px 0;
-        background: linear-gradient(180deg, #f0f5f5, #7d8b8e);
-        box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18);
-        z-index: 4;
+        left: 50%;
+        top: 86px;
+        width: 74px;
+        height: 74px;
+        transform: translateX(-50%);
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at 50% 50%, #111719 0 24%, #f5fbfb 25% 34%, #7c878b 35% 48%, #20292d 49% 60%, transparent 61%),
+          radial-gradient(circle at 45% 35%, #f6fbfb, #899499 54%, #172023 72%);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+        z-index: 6;
       }
 
       .tap-spout::after {
         content: "";
         position: absolute;
-        right: -4px;
-        bottom: -14px;
+        left: 50%;
+        bottom: -28px;
         width: 14px;
-        height: 18px;
-        border-radius: 0 0 9px 9px;
-        background: linear-gradient(180deg, #879498, #e9eeee);
+        height: 30px;
+        transform: translateX(-50%);
+        border-radius: 0 0 7px 7px;
+        background: linear-gradient(90deg, #879498, #f4f8f8 45%, #6f7a7d);
       }
 
       .machine-shell {
         position: absolute;
-        inset: 64px 18px 18px;
-        overflow: hidden;
-        border-radius: 34px 34px 18px 18px;
+        inset: 70px 0 18px;
+        overflow: visible;
+        border-radius: 30px 30px 16px 16px;
         background:
-          linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 20% 78%, rgba(0, 0, 0, 0.34)),
-          linear-gradient(145deg, #313b40, #0b1113 58%, #030607);
-        border: 2px solid rgba(255, 255, 255, 0.18);
+          linear-gradient(90deg, #060708 0 12%, #343b3f 13% 19%, transparent 20% 80%, #343b3f 81% 87%, #050607 88% 100%),
+          linear-gradient(180deg, #2a3033, #080b0c);
+        border: 2px solid rgba(255, 255, 255, 0.16);
         box-shadow:
           inset 0 0 0 1px rgba(255, 255, 255, 0.08),
           inset 0 -24px 30px rgba(0, 0, 0, 0.48);
       }
 
+      .machine-shell::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 14px;
+        width: 154px;
+        transform: translateX(-50%);
+        border-radius: 3px 3px 12px 12px;
+        background:
+          linear-gradient(90deg, rgba(20, 24, 26, 0.20), transparent 16% 84%, rgba(20, 24, 26, 0.22)),
+          linear-gradient(180deg, #e5e5e2, #bfc1bd 54%, #ecebe7);
+        border-left: 2px solid rgba(0, 0, 0, 0.30);
+        border-right: 2px solid rgba(0, 0, 0, 0.30);
+        box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.24);
+      }
+
       .machine-highlight {
         position: absolute;
-        left: 20px;
-        top: 18px;
-        width: 38px;
-        height: 176px;
-        border-radius: 24px;
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.03));
-        opacity: 0.72;
+        left: 76px;
+        top: 4px;
+        width: 56px;
+        height: 186px;
+        border-radius: 2px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.02));
+        opacity: 0.5;
+        z-index: 1;
       }
 
       .display-panel {
         position: absolute;
-        top: 20px;
-        right: 22px;
-        width: 58px;
-        height: 42px;
+        left: 50%;
+        bottom: 35px;
+        width: 72px;
+        height: 62px;
+        transform: translateX(-50%);
         display: grid;
         place-items: center;
         align-content: center;
+        clip-path: polygon(14% 0, 86% 0, 100% 100%, 0 100%);
         border-radius: 8px;
         background: #071012;
         border: 1px solid rgba(91, 232, 197, 0.36);
         box-shadow: 0 0 16px rgba(69, 201, 169, 0.14), inset 0 0 10px rgba(69, 201, 169, 0.12);
+        z-index: 3;
       }
 
       .display-panel span {
         color: #91f0dc;
-        font-size: 1.05rem;
+        font-size: 1.45rem;
         font-weight: 800;
         line-height: 1;
       }
 
       .display-panel small {
         color: rgba(145, 240, 220, 0.65);
-        font-size: 0.54rem;
+        font-size: 0.52rem;
         text-transform: uppercase;
       }
 
       .view-window {
         position: absolute;
         left: 50%;
-        bottom: 32px;
-        width: 104px;
-        height: 154px;
+        top: 90px;
+        width: 42px;
+        height: 72px;
         transform: translateX(-50%);
         overflow: hidden;
-        border-radius: 26px 26px 16px 16px;
+        border-radius: 12px 12px 8px 8px;
         background: linear-gradient(180deg, rgba(5, 12, 13, 0.8), rgba(4, 7, 8, 0.95));
-        border: 5px solid #0a0f10;
+        border: 3px solid #0a0f10;
         box-shadow:
           0 0 0 2px rgba(255, 255, 255, 0.13),
           inset 0 0 18px rgba(0, 0, 0, 0.72);
+        z-index: 3;
       }
 
       .window-fill {
         position: absolute;
-        left: 9px;
-        right: 9px;
-        bottom: 8px;
+        left: 6px;
+        right: 6px;
+        bottom: 5px;
         height: var(--level);
         min-height: 5px;
         max-height: calc(100% - 16px);
-        border-radius: 18px 18px 12px 12px;
+        border-radius: 8px 8px 6px 6px;
         background:
           radial-gradient(ellipse at 50% 0, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0) 18px),
           repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0 2px, transparent 2px 10px),
@@ -464,7 +491,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .level-label {
         position: absolute;
-        inset: auto 0 22px;
+        inset: auto 0 10px;
         display: grid;
         justify-items: center;
         gap: 2px;
@@ -473,12 +500,13 @@ class PerfectDraftTaproomCard extends HTMLElement {
       }
 
       .level-label strong {
-        font-size: 1.72rem;
+        font-size: 0.9rem;
         line-height: 1;
       }
 
       .level-label span {
-        font-size: 0.72rem;
+        display: none;
+        font-size: 0.5rem;
         text-transform: uppercase;
         letter-spacing: 0;
         font-weight: 700;
@@ -486,15 +514,15 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .target-badge {
         position: absolute;
-        right: 22px;
-        bottom: 32px;
+        right: 35px;
+        bottom: 43px;
         display: grid;
         place-items: center;
         align-content: center;
-        width: 58px;
-        height: 42px;
-        border-radius: 8px;
-        background: rgba(5, 15, 17, 0.72);
+        width: 40px;
+        height: 31px;
+        border-radius: 6px;
+        background: rgba(5, 15, 17, 0.82);
         border: 1px solid rgba(255, 255, 255, 0.18);
         box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
         overflow: hidden;
@@ -529,13 +557,13 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .target-badge span {
         font-weight: 800;
-        font-size: 1rem;
+        font-size: 0.74rem;
         line-height: 1;
       }
 
       .target-badge small {
         color: rgba(255, 255, 255, 0.76);
-        font-size: 0.55rem;
+        font-size: 0.47rem;
         text-transform: uppercase;
       }
 
@@ -633,27 +661,32 @@ class PerfectDraftTaproomCard extends HTMLElement {
       }
 
       ha-card.compact .keg-stage {
-        min-height: 232px;
+        min-height: 252px;
       }
 
       ha-card.compact .machine {
-        width: min(70%, 205px);
-        height: 222px;
+        width: min(72%, 220px);
+        height: 238px;
       }
 
       ha-card.compact .machine-shell {
-        inset: 54px 16px 16px;
+        inset: 64px 0 16px;
       }
 
       ha-card.compact .view-window {
-        width: 88px;
-        height: 126px;
+        top: 82px;
+        width: 38px;
+        height: 62px;
       }
 
-      ha-card.compact .display-panel,
+      ha-card.compact .display-panel {
+        width: 66px;
+        height: 54px;
+      }
+
       ha-card.compact .target-badge {
-        width: 50px;
-        height: 36px;
+        width: 36px;
+        height: 28px;
       }
 
       @media (max-width: 360px) {
