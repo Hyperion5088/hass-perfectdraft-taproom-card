@@ -30,17 +30,17 @@ The card presents the loaded beer as a PerfectDraft-style pump with a front view
 HACS serves the card from:
 
 ```text
-/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js?v=7
+/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js?v=8
 ```
 
-The trailing `v=7` is intentional. Increment it when updating the card if Home Assistant or the browser keeps serving an older cached copy.
+The trailing `v=8` is intentional. Increment it when updating the card if Home Assistant or the browser keeps serving an older cached copy.
 
 ### Manual
 
 Copy `perfectdraft-taproom-card.js` to your Home Assistant `www` directory and add it as a dashboard resource:
 
 ```yaml
-url: /local/perfectdraft-taproom-card.js?v=7
+url: /local/perfectdraft-taproom-card.js?v=8
 type: module
 ```
 
@@ -61,6 +61,7 @@ level_entity: sensor.perfectdraft_pro_keg_remaining
 temperature_entity: sensor.perfectdraft_pro_temperature
 target_temperature_entity: sensor.perfectdraft_pro_target_temperature
 freshness_entity: sensor.perfectdraft_pro_keg_freshness
+last_pour_entity: sensor.perfectdraft_pro_last_pour
 ```
 
 Optional display settings:
@@ -69,6 +70,7 @@ Optional display settings:
 compact: false
 show_pump: true
 show_details: true
+show_last_pour: true
 show_controls: false
 name: PerfectDraft Taproom
 ```
@@ -93,5 +95,5 @@ This repository is structured as a HACS Dashboard plugin. `hacs.json` points HAC
 
 When releasing a visual/card update, bump both:
 
-- The `?v=7` query string shown in the resource URL examples.
+- The `?v=8` query string shown in the resource URL examples.
 - `PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER` near the top of `perfectdraft-taproom-card.js`.

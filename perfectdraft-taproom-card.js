@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.6";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.7";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 7;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 8;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -12,6 +12,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
       type: "custom:perfectdraft-taproom-card",
       show_pump: true,
       show_details: true,
+      show_last_pour: true,
       show_controls: false,
     };
   }
@@ -23,6 +24,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
     this._config = {
       show_pump: true,
       show_details: true,
+      show_last_pour: true,
       show_controls: false,
       compact: false,
       ...config,
@@ -80,6 +82,18 @@ class PerfectDraftTaproomCard extends HTMLElement {
     return this._hass?.formatEntityState ? this._hass.formatEntityState(entity) : entity.state;
   }
 
+  _formatDateTime(entity, fallback = "—") {
+    if (!entity?.last_changed) return fallback;
+    const value = new Date(entity.last_changed);
+    if (Number.isNaN(value.getTime())) return fallback;
+    return new Intl.DateTimeFormat(undefined, {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(value);
+  }
+
   _fireAction() {
     const event = new CustomEvent("hass-more-info", {
       bubbles: true,
@@ -97,6 +111,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
     const tempEntity = this._entity("temperature_entity", ["temperature"], ["target", "eco", "ideal"]);
     const targetEntity = this._entity("target_temperature_entity", ["target", "temperature"]);
     const freshnessEntity = this._entity("freshness_entity", ["keg", "freshness"]);
+    const lastPourEntity = this._entity("last_pour_entity", ["last", "pour"]);
 
     const level = Math.max(0, Math.min(100, this._stateNumber(levelEntity, 0)));
     const currentTemp = this._stateNumber(tempEntity);
@@ -162,6 +177,13 @@ class PerfectDraftTaproomCard extends HTMLElement {
             <section class="stats">
               <div><span>Current</span><strong>${this._formatNumber(currentTemp, "°C", 0)}</strong></div>
               <div><span>Target</span><strong>${this._formatNumber(targetTemp, "°C", 0)}</strong></div>
+              ${this._config.show_last_pour ? `
+                <div>
+                  <span>Last pour</span>
+                  <strong>${this._escape(this._formatState(lastPourEntity))}</strong>
+                  <small>${this._escape(this._formatDateTime(lastPourEntity))}</small>
+                </div>
+              ` : ""}
             </section>
           ` : ""}
 
@@ -700,7 +722,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .stats {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
         gap: 8px;
         margin-top: 10px;
       }
@@ -726,6 +748,14 @@ class PerfectDraftTaproomCard extends HTMLElement {
         color: inherit;
         font-size: 0.98rem;
         line-height: 1.1;
+      }
+
+      .stats small {
+        display: block;
+        margin-top: 3px;
+        color: rgba(247, 251, 251, 0.58);
+        font-size: 0.68rem;
+        line-height: 1.15;
       }
 
       .controls {
@@ -887,8 +917,10 @@ const CARD_EDITOR_SCHEMA = [
   { name: "temperature_entity", selector: { entity: { domain: "sensor" } } },
   { name: "target_temperature_entity", selector: { entity: { domain: "sensor" } } },
   { name: "freshness_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "last_pour_entity", selector: { entity: { domain: "sensor" } } },
   { name: "show_pump", selector: { boolean: {} } },
   { name: "show_details", selector: { boolean: {} } },
+  { name: "show_last_pour", selector: { boolean: {} } },
   { name: "compact", selector: { boolean: {} } },
   { name: "show_controls", selector: { boolean: {} } },
   { name: "apply_ideal_button_entity", selector: { entity: { domain: "button" } } },
@@ -905,8 +937,10 @@ const CARD_EDITOR_LABELS = {
   temperature_entity: "Current temperature entity",
   target_temperature_entity: "Target temperature entity",
   freshness_entity: "Freshness entity",
+  last_pour_entity: "Last pour entity",
   show_pump: "Show pump/keg view",
   show_details: "Show temperature row",
+  show_last_pour: "Show last pour",
   compact: "Compact mode",
   show_controls: "Show controls",
   apply_ideal_button_entity: "Apply ideal temperature button",
@@ -921,6 +955,7 @@ class PerfectDraftTaproomCardEditor extends HTMLElement {
     this._config = {
       show_pump: true,
       show_details: true,
+      show_last_pour: true,
       show_controls: false,
       compact: false,
       ...config,
