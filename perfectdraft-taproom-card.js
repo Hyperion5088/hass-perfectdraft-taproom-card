@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.3";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.4";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 4;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 5;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -449,12 +449,12 @@ class PerfectDraftTaproomCard extends HTMLElement {
       .view-window {
         position: absolute;
         left: 50%;
-        top: 184px;
+        top: 140px;
         width: 44px;
-        height: 88px;
+        height: 132px;
         transform: translateX(-50%);
         overflow: hidden;
-        border-radius: 12px 12px 8px 8px;
+        border-radius: 14px 14px 8px 8px;
         background: linear-gradient(180deg, rgba(5, 12, 13, 0.8), rgba(4, 7, 8, 0.95));
         border: 3px solid #0a0f10;
         box-shadow:
@@ -478,6 +478,32 @@ class PerfectDraftTaproomCard extends HTMLElement {
           linear-gradient(180deg, #ffd260, #f1a523 48%, #c97612);
         transition: height 0.6s ease;
         box-shadow: inset 0 0 14px rgba(126, 70, 0, 0.35), 0 0 18px rgba(255, 179, 54, 0.18);
+        overflow: hidden;
+      }
+
+      .window-fill::before,
+      .window-fill::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 35% 95%, rgba(255, 255, 255, 0.78) 0 2px, transparent 3px),
+          radial-gradient(circle at 62% 112%, rgba(255, 255, 255, 0.56) 0 1.5px, transparent 2.5px),
+          radial-gradient(circle at 48% 128%, rgba(255, 255, 255, 0.68) 0 2px, transparent 3px);
+        background-size: 100% 52px;
+        opacity: 0.72;
+        animation: taproom-bubbles 3.2s linear infinite;
+        pointer-events: none;
+      }
+
+      .window-fill::after {
+        background:
+          radial-gradient(circle at 68% 106%, rgba(255, 255, 255, 0.62) 0 2px, transparent 3px),
+          radial-gradient(circle at 28% 118%, rgba(255, 255, 255, 0.45) 0 1.5px, transparent 2.5px);
+        background-size: 100% 64px;
+        animation-duration: 4.6s;
+        animation-delay: -1.4s;
+        opacity: 0.54;
       }
 
       .window-glass {
@@ -675,9 +701,9 @@ class PerfectDraftTaproomCard extends HTMLElement {
       }
 
       ha-card.compact .view-window {
-        top: 145px;
+        top: 108px;
         width: 38px;
-        height: 74px;
+        height: 111px;
       }
 
       ha-card.compact .display-panel {
@@ -705,6 +731,23 @@ class PerfectDraftTaproomCard extends HTMLElement {
         .freshness {
           width: 74px;
           height: 74px;
+        }
+      }
+
+      @keyframes taproom-bubbles {
+        from {
+          transform: translateY(24px);
+        }
+        to {
+          transform: translateY(-64px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .window-fill::before,
+        .window-fill::after {
+          animation: none;
+          opacity: 0.38;
         }
       }
     `;
