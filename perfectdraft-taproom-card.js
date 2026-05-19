@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.2";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.3";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 3;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 4;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -305,16 +305,16 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .keg-stage {
         position: relative;
-        min-height: 306px;
+        min-height: 455px;
         display: grid;
         place-items: center;
-        padding: 16px 0 8px;
+        padding: 16px 0 12px;
       }
 
       .machine {
-        width: min(76%, 265px);
-        min-width: 206px;
-        height: 286px;
+        width: min(68%, 250px);
+        min-width: 204px;
+        height: 430px;
         position: relative;
         filter: drop-shadow(0 20px 26px rgba(0, 0, 0, 0.42));
       }
@@ -374,16 +374,16 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .machine-shell {
         position: absolute;
-        inset: 70px 0 18px;
+        inset: 70px 0 26px;
         overflow: visible;
-        border-radius: 30px 30px 16px 16px;
+        border-radius: 30px 30px 22px 22px;
         background:
           linear-gradient(90deg, #060708 0 12%, #343b3f 13% 19%, transparent 20% 80%, #343b3f 81% 87%, #050607 88% 100%),
           linear-gradient(180deg, #2a3033, #080b0c);
         border: 2px solid rgba(255, 255, 255, 0.16);
         box-shadow:
           inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-          inset 0 -24px 30px rgba(0, 0, 0, 0.48);
+          inset 0 -36px 34px rgba(0, 0, 0, 0.48);
       }
 
       .machine-shell::before {
@@ -391,7 +391,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
         position: absolute;
         left: 50%;
         top: 0;
-        bottom: 14px;
+        bottom: 16px;
         width: 154px;
         transform: translateX(-50%);
         border-radius: 3px 3px 12px 12px;
@@ -405,10 +405,10 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .machine-highlight {
         position: absolute;
-        left: 76px;
+        left: 72px;
         top: 4px;
-        width: 56px;
-        height: 186px;
+        width: 54px;
+        height: 308px;
         border-radius: 2px;
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.02));
         opacity: 0.5;
@@ -418,7 +418,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
       .display-panel {
         position: absolute;
         left: 50%;
-        bottom: 35px;
+        bottom: 62px;
         width: 72px;
         height: 62px;
         transform: translateX(-50%);
@@ -449,9 +449,9 @@ class PerfectDraftTaproomCard extends HTMLElement {
       .view-window {
         position: absolute;
         left: 50%;
-        top: 90px;
-        width: 42px;
-        height: 72px;
+        top: 184px;
+        width: 44px;
+        height: 88px;
         transform: translateX(-50%);
         overflow: hidden;
         border-radius: 12px 12px 8px 8px;
@@ -514,8 +514,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .target-badge {
         position: absolute;
-        right: 35px;
-        bottom: 43px;
+        right: 32px;
+        bottom: 72px;
         display: grid;
         place-items: center;
         align-content: center;
@@ -570,7 +570,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
       .drip-tray {
         position: absolute;
         left: 50%;
-        bottom: 10px;
+        bottom: 22px;
         width: 124px;
         height: 15px;
         transform: translateX(-50%);
@@ -584,7 +584,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
         left: 34px;
         right: 34px;
         bottom: 0;
-        height: 22px;
+        height: 30px;
         border-radius: 0 0 18px 18px;
         background: linear-gradient(180deg, #151d20, #050708);
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -592,8 +592,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .freshness {
         position: absolute;
-        left: 0;
-        bottom: 20px;
+        left: 4px;
+        bottom: 24px;
         width: 86px;
         height: 86px;
         border-radius: 50%;
@@ -604,6 +604,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
           radial-gradient(circle at center, #102325 58%, transparent 60%),
           conic-gradient(#45c9a9 var(--freshness), rgba(255, 255, 255, 0.15) 0);
         box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+        z-index: 3;
       }
 
       .freshness span {
@@ -661,32 +662,34 @@ class PerfectDraftTaproomCard extends HTMLElement {
       }
 
       ha-card.compact .keg-stage {
-        min-height: 252px;
+        min-height: 360px;
       }
 
       ha-card.compact .machine {
-        width: min(72%, 220px);
-        height: 238px;
+        width: min(66%, 210px);
+        height: 338px;
       }
 
       ha-card.compact .machine-shell {
-        inset: 64px 0 16px;
+        inset: 64px 0 24px;
       }
 
       ha-card.compact .view-window {
-        top: 82px;
+        top: 145px;
         width: 38px;
-        height: 62px;
+        height: 74px;
       }
 
       ha-card.compact .display-panel {
         width: 66px;
         height: 54px;
+        bottom: 52px;
       }
 
       ha-card.compact .target-badge {
         width: 36px;
         height: 28px;
+        bottom: 60px;
       }
 
       @media (max-width: 360px) {
@@ -695,7 +698,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
         }
 
         .machine {
-          width: 76%;
+          width: 66%;
           min-width: 170px;
         }
 
