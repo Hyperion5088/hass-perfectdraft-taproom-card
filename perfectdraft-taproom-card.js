@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.0";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.1";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 1;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 2;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -139,22 +139,31 @@ class PerfectDraftTaproomCard extends HTMLElement {
               <small>days fresh</small>
             </div>
 
-            <div class="keg" style="--level: ${level}%">
-              <div class="keg-top"></div>
-              <div class="keg-body">
-                <div class="beer-fill"></div>
-                <div class="shine"></div>
-                <div class="level-label">
-                  <strong>${this._formatNumber(level, "%", 0)}</strong>
-                  <span>remaining</span>
+            <div class="machine" style="--level: ${level}%">
+              <div class="tap-handle"></div>
+              <div class="tap-neck"></div>
+              <div class="tap-spout"></div>
+              <div class="machine-shell">
+                <div class="machine-highlight"></div>
+                <div class="display-panel">
+                  <span>${this._formatNumber(currentTemp, "°", 0)}</span>
+                  <small>current</small>
                 </div>
-                <div class="temperature ${tempClass}">
-                  <span class="current">${this._formatNumber(currentTemp, "°", 0)}</span>
-                  <span class="divider"></span>
-                  <span class="target">${this._formatNumber(targetTemp, "°", 0)}</span>
+                <div class="view-window">
+                  <div class="window-fill"></div>
+                  <div class="window-glass"></div>
+                  <div class="level-label">
+                    <strong>${this._formatNumber(level, "%", 0)}</strong>
+                    <span>remaining</span>
+                  </div>
                 </div>
+                <div class="target-badge ${tempClass}">
+                  <small>target</small>
+                  <span>${this._formatNumber(targetTemp, "°", 0)}</span>
+                </div>
+                <div class="drip-tray"></div>
               </div>
-              <div class="keg-base"></div>
+              <div class="machine-base"></div>
             </div>
           </section>
 
@@ -296,72 +305,166 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .keg-stage {
         position: relative;
-        min-height: 250px;
+        min-height: 292px;
         display: grid;
         place-items: center;
         padding: 16px 0 8px;
       }
 
-      .keg {
-        width: min(66%, 210px);
-        min-width: 168px;
+      .machine {
+        width: min(72%, 244px);
+        min-width: 188px;
+        height: 270px;
         position: relative;
-        filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.35));
+        filter: drop-shadow(0 20px 26px rgba(0, 0, 0, 0.42));
       }
 
-      .keg-top,
-      .keg-base {
-        height: 34px;
-        border-radius: 50%;
-        background: linear-gradient(180deg, #66757b, #243034);
-        border: 2px solid rgba(255, 255, 255, 0.28);
-        position: relative;
-        z-index: 2;
-      }
-
-      .keg-base {
-        margin-top: -19px;
-        background: linear-gradient(180deg, #182225, #090f10);
-      }
-
-      .keg-body {
-        height: 212px;
-        margin: -18px 7px 0;
-        position: relative;
-        overflow: hidden;
-        border-radius: 0 0 22px 22px;
-        background: linear-gradient(90deg, #1d292d 0%, #536168 16%, #c9d0d1 28%, #56646a 42%, #172125 100%);
-        border-left: 2px solid rgba(255, 255, 255, 0.22);
-        border-right: 2px solid rgba(0, 0, 0, 0.42);
-      }
-
-      .beer-fill {
+      .tap-handle {
         position: absolute;
-        left: 14%;
-        right: 14%;
-        bottom: 10px;
-        height: var(--level);
-        min-height: 6px;
-        max-height: calc(100% - 24px);
-        border-radius: 12px 12px 18px 18px;
+        left: 50%;
+        top: 0;
+        width: 22px;
+        height: 74px;
+        transform: translateX(-50%);
+        border-radius: 14px 14px 8px 8px;
+        background: linear-gradient(90deg, #05090a, #5c666b 42%, #151b1d);
+        border: 2px solid rgba(255, 255, 255, 0.22);
+        z-index: 4;
+      }
+
+      .tap-neck {
+        position: absolute;
+        left: 50%;
+        top: 62px;
+        width: 18px;
+        height: 38px;
+        transform: translateX(-50%);
+        border-radius: 9px;
+        background: linear-gradient(90deg, #b9c3c5, #f6fbfb 48%, #7b898d);
+        z-index: 5;
+      }
+
+      .tap-spout {
+        position: absolute;
+        left: calc(50% + 8px);
+        top: 84px;
+        width: 58px;
+        height: 19px;
+        border-radius: 0 14px 14px 0;
+        background: linear-gradient(180deg, #f0f5f5, #7d8b8e);
+        box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18);
+        z-index: 4;
+      }
+
+      .tap-spout::after {
+        content: "";
+        position: absolute;
+        right: -4px;
+        bottom: -14px;
+        width: 14px;
+        height: 18px;
+        border-radius: 0 0 9px 9px;
+        background: linear-gradient(180deg, #879498, #e9eeee);
+      }
+
+      .machine-shell {
+        position: absolute;
+        inset: 64px 18px 18px;
+        overflow: hidden;
+        border-radius: 34px 34px 18px 18px;
         background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 14px),
-          repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 2px, transparent 2px 12px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 20% 78%, rgba(0, 0, 0, 0.34)),
+          linear-gradient(145deg, #313b40, #0b1113 58%, #030607);
+        border: 2px solid rgba(255, 255, 255, 0.18);
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+          inset 0 -24px 30px rgba(0, 0, 0, 0.48);
+      }
+
+      .machine-highlight {
+        position: absolute;
+        left: 20px;
+        top: 18px;
+        width: 38px;
+        height: 176px;
+        border-radius: 24px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.03));
+        opacity: 0.72;
+      }
+
+      .display-panel {
+        position: absolute;
+        top: 20px;
+        right: 22px;
+        width: 58px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        align-content: center;
+        border-radius: 8px;
+        background: #071012;
+        border: 1px solid rgba(91, 232, 197, 0.36);
+        box-shadow: 0 0 16px rgba(69, 201, 169, 0.14), inset 0 0 10px rgba(69, 201, 169, 0.12);
+      }
+
+      .display-panel span {
+        color: #91f0dc;
+        font-size: 1.05rem;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .display-panel small {
+        color: rgba(145, 240, 220, 0.65);
+        font-size: 0.54rem;
+        text-transform: uppercase;
+      }
+
+      .view-window {
+        position: absolute;
+        left: 50%;
+        bottom: 32px;
+        width: 104px;
+        height: 154px;
+        transform: translateX(-50%);
+        overflow: hidden;
+        border-radius: 26px 26px 16px 16px;
+        background: linear-gradient(180deg, rgba(5, 12, 13, 0.8), rgba(4, 7, 8, 0.95));
+        border: 5px solid #0a0f10;
+        box-shadow:
+          0 0 0 2px rgba(255, 255, 255, 0.13),
+          inset 0 0 18px rgba(0, 0, 0, 0.72);
+      }
+
+      .window-fill {
+        position: absolute;
+        left: 9px;
+        right: 9px;
+        bottom: 8px;
+        height: var(--level);
+        min-height: 5px;
+        max-height: calc(100% - 16px);
+        border-radius: 18px 18px 12px 12px;
+        background:
+          radial-gradient(ellipse at 50% 0, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0) 18px),
+          repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0 2px, transparent 2px 10px),
           linear-gradient(180deg, #ffd260, #f1a523 48%, #c97612);
         transition: height 0.6s ease;
-        box-shadow: inset 0 0 16px rgba(126, 70, 0, 0.35);
+        box-shadow: inset 0 0 14px rgba(126, 70, 0, 0.35), 0 0 18px rgba(255, 179, 54, 0.18);
       }
 
-      .shine {
+      .window-glass {
         position: absolute;
         inset: 0;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35) 21%, transparent 38%);
+        background:
+          linear-gradient(110deg, transparent 0 22%, rgba(255, 255, 255, 0.24) 24%, transparent 38%),
+          radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.12), transparent 45%);
         pointer-events: none;
       }
 
       .level-label {
         position: absolute;
-        inset: auto 0 30px;
+        inset: auto 0 22px;
         display: grid;
         justify-items: center;
         gap: 2px;
@@ -370,7 +473,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
       }
 
       .level-label strong {
-        font-size: 2.05rem;
+        font-size: 1.72rem;
         line-height: 1;
       }
 
@@ -381,59 +484,82 @@ class PerfectDraftTaproomCard extends HTMLElement {
         font-weight: 700;
       }
 
-      .temperature {
+      .target-badge {
         position: absolute;
-        top: 18px;
-        right: 11px;
+        right: 22px;
+        bottom: 32px;
         display: grid;
         place-items: center;
-        width: 46px;
-        min-height: 88px;
-        border-radius: 24px;
+        align-content: center;
+        width: 58px;
+        height: 42px;
+        border-radius: 8px;
         background: rgba(5, 15, 17, 0.72);
         border: 1px solid rgba(255, 255, 255, 0.18);
         box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
         overflow: hidden;
       }
 
-      .temperature::before {
+      .target-badge::before {
         content: "";
         position: absolute;
-        inset: auto 6px 6px;
-        height: 50%;
-        border-radius: 14px;
+        inset: auto 0 0;
+        height: 4px;
         background: #45c9a9;
         opacity: 0.9;
       }
 
-      .temperature.warm::before {
+      .target-badge.warm::before {
         background: #ffb84d;
       }
 
-      .temperature.cold::before {
+      .target-badge.cold::before {
         background: #79b8ff;
       }
 
-      .temperature.unknown::before {
+      .target-badge.unknown::before {
         background: rgba(255, 255, 255, 0.28);
       }
 
-      .temperature span {
+      .target-badge span,
+      .target-badge small {
         position: relative;
         z-index: 1;
+      }
+
+      .target-badge span {
         font-weight: 800;
-        font-size: 0.8rem;
+        font-size: 1rem;
+        line-height: 1;
       }
 
-      .temperature .target {
+      .target-badge small {
         color: rgba(255, 255, 255, 0.76);
-        font-size: 0.72rem;
+        font-size: 0.55rem;
+        text-transform: uppercase;
       }
 
-      .divider {
-        width: 22px;
-        height: 1px;
-        background: rgba(255, 255, 255, 0.28);
+      .drip-tray {
+        position: absolute;
+        left: 50%;
+        bottom: 10px;
+        width: 124px;
+        height: 15px;
+        transform: translateX(-50%);
+        border-radius: 50%;
+        background: linear-gradient(180deg, #313b40, #05090a);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.16);
+      }
+
+      .machine-base {
+        position: absolute;
+        left: 34px;
+        right: 34px;
+        bottom: 0;
+        height: 22px;
+        border-radius: 0 0 18px 18px;
+        background: linear-gradient(180deg, #151d20, #050708);
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .freshness {
@@ -507,11 +633,27 @@ class PerfectDraftTaproomCard extends HTMLElement {
       }
 
       ha-card.compact .keg-stage {
-        min-height: 205px;
+        min-height: 232px;
       }
 
-      ha-card.compact .keg-body {
-        height: 170px;
+      ha-card.compact .machine {
+        width: min(70%, 205px);
+        height: 222px;
+      }
+
+      ha-card.compact .machine-shell {
+        inset: 54px 16px 16px;
+      }
+
+      ha-card.compact .view-window {
+        width: 88px;
+        height: 126px;
+      }
+
+      ha-card.compact .display-panel,
+      ha-card.compact .target-badge {
+        width: 50px;
+        height: 36px;
       }
 
       @media (max-width: 360px) {
@@ -519,9 +661,9 @@ class PerfectDraftTaproomCard extends HTMLElement {
           padding: 14px;
         }
 
-        .keg {
-          width: 72%;
-          min-width: 150px;
+        .machine {
+          width: 76%;
+          min-width: 170px;
         }
 
         .freshness {
