@@ -28,15 +28,17 @@ The card presents the loaded beer as a graphical keg. The beer level drops with 
 HACS serves the card from:
 
 ```text
-/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js
+/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js?v=1
 ```
+
+The trailing `v=1` is intentional. Increment it when updating the card if Home Assistant or the browser keeps serving an older cached copy.
 
 ### Manual
 
 Copy `perfectdraft-taproom-card.js` to your Home Assistant `www` directory and add it as a dashboard resource:
 
 ```yaml
-url: /local/perfectdraft-taproom-card.js
+url: /local/perfectdraft-taproom-card.js?v=1
 type: module
 ```
 
@@ -70,3 +72,12 @@ name: PerfectDraft Taproom
 ## Entity Notes
 
 The Beer sensor can provide useful attributes such as `image_url`, `brewery`, `style`, `abv`, `stock_state`, and `shop_last_checked`. The card uses those when present and still works without them.
+
+## HACS Compatibility
+
+This repository is structured as a HACS Dashboard plugin. `hacs.json` points HACS at `perfectdraft-taproom-card.js`, which lives in the repository root.
+
+When releasing a visual/card update, bump both:
+
+- The `?v=1` query string shown in the resource URL examples.
+- `PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER` near the top of `perfectdraft-taproom-card.js`.

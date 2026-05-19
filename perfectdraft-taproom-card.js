@@ -1,3 +1,7 @@
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.0";
+// Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 1;
+
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
     return document.createElement("perfectdraft-taproom-card-editor");
@@ -644,10 +648,22 @@ class PerfectDraftTaproomCardEditor extends HTMLElement {
 customElements.define("perfectdraft-taproom-card", PerfectDraftTaproomCard);
 customElements.define("perfectdraft-taproom-card-editor", PerfectDraftTaproomCardEditor);
 
+window.PerfectDraftTaproomCard = {
+  version: PERFECTDRAFT_TAPROOM_CARD_VERSION,
+  cacheBuster: PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER,
+};
+
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "perfectdraft-taproom-card",
   name: "PerfectDraft Taproom Card",
   description: "Graphical keg card for PerfectDraft Taproom",
+  documentationURL: "https://github.com/Hyperion5088/hass-perfectdraft-taproom-card",
   preview: true,
 });
+
+console.info(
+  `%c PERFECTDRAFT-TAPROOM-CARD %c v${PERFECTDRAFT_TAPROOM_CARD_VERSION} cache ${PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER} `,
+  "color: #102325; background: #ffc34d; font-weight: 700;",
+  "color: #f7fbfb; background: #0b3f46; font-weight: 700;",
+);
