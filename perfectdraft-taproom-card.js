@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.4";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.5";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 5;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 6;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -104,18 +104,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
     const subtitle = [this._attrValue(attrs.brewery), this._attrValue(attrs.style), this._attrValue(attrs.abv)]
       .filter(Boolean)
       .join(" • ");
-    const stock = this._friendlyStock(attrs.stock_state);
+    const beerTooltip = this._beerTooltip(attrs);
     const freshnessPercent = Number.isFinite(freshness) ? Math.max(0, Math.min(100, freshness / 30 * 100)) : 0;
-    const delta = Number.isFinite(currentTemp) && Number.isFinite(targetTemp)
-      ? currentTemp - targetTemp
-      : undefined;
-    const tempClass = !Number.isFinite(delta)
-      ? "unknown"
-      : Math.abs(delta) <= 1
-        ? "ready"
-        : delta > 0
-          ? "warm"
-          : "cold";
 
     this.innerHTML = `
       <ha-card class="${this._config.compact ? "compact" : ""}">
@@ -129,7 +119,6 @@ class PerfectDraftTaproomCard extends HTMLElement {
               <h2>${this._escape(this._config.name || beerName)}</h2>
               ${this._config.name ? `<p class="loaded">${this._escape(beerName)}</p>` : ""}
               ${subtitle ? `<p>${this._escape(subtitle)}</p>` : ""}
-              ${stock ? `<span class="stock ${stock.key}">${stock.label}</span>` : ""}
             </div>
           </section>
 
@@ -139,7 +128,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
               <small>days fresh</small>
             </div>
 
-            <div class="machine" style="--level: ${level}%">
+            <div class="machine" style="--level: ${level}%" ${beerTooltip ? `data-tooltip="${this._escape(beerTooltip)}"` : ""}>
               <div class="tap-handle"></div>
               <div class="tap-neck"></div>
               <div class="tap-spout"></div>
@@ -157,10 +146,6 @@ class PerfectDraftTaproomCard extends HTMLElement {
                     <span>remaining</span>
                   </div>
                 </div>
-                <div class="target-badge ${tempClass}">
-                  <small>left</small>
-                  <span>${this._formatNumber(level, "%", 0)}</span>
-                </div>
                 <div class="drip-tray"></div>
               </div>
               <div class="machine-base"></div>
@@ -171,7 +156,6 @@ class PerfectDraftTaproomCard extends HTMLElement {
             <section class="stats">
               <div><span>Current</span><strong>${this._formatNumber(currentTemp, "°C", 0)}</strong></div>
               <div><span>Target</span><strong>${this._formatNumber(targetTemp, "°C", 0)}</strong></div>
-              <div><span>Freshness</span><strong>${Number.isFinite(freshness) ? `${Math.max(0, Math.round(freshness))} d` : "—"}</strong></div>
             </section>
           ` : ""}
         </button>
@@ -192,6 +176,29 @@ class PerfectDraftTaproomCard extends HTMLElement {
     if (value === "out_of_stock") return { key: "out", label: "Out of stock" };
     if (value) return { key: "unknown", label: String(value).replace(/_/g, " ") };
     return undefined;
+  }
+
+  _beerTooltip(attrs) {
+    const rows = [];
+    const stock = this._friendlyStock(attrs.stock_state);
+    const recommended = this._attrValue(attrs.recommended_temperature || attrs.serving_temperature);
+    const price = this._attrValue(attrs.price);
+    const pricePerPint = this._attrValue(attrs.price_per_pint);
+    const foodPairings = this._attrValue(attrs.food_pairings);
+    const shortDescription = this._attrValue(attrs.short_description);
+    const reviewRating = this._attrValue(attrs.review_rating);
+    const reviewCount = this._attrValue(attrs.review_count);
+    const lastChecked = this._attrValue(attrs.shop_last_checked);
+
+    if (recommended) rows.push(`Serving: ${recommended}`);
+    if (stock) rows.push(`Shop: ${stock.label}`);
+    if (price) rows.push(`Price: ${price}${pricePerPint ? ` (${pricePerPint})` : ""}`);
+    if (reviewRating) rows.push(`Rating: ${reviewRating}${reviewCount ? ` from ${reviewCount} reviews` : ""}`);
+    if (foodPairings) rows.push(`Pairs with: ${foodPairings}`);
+    if (shortDescription) rows.push(shortDescription);
+    if (lastChecked) rows.push(`Shop checked: ${lastChecked}`);
+
+    return rows.join("\n");
   }
 
   _escape(value) {
@@ -278,31 +285,6 @@ class PerfectDraftTaproomCard extends HTMLElement {
         color: rgba(247, 251, 251, 0.88);
       }
 
-      .stock {
-        display: inline-flex;
-        margin-top: 8px;
-        padding: 3px 8px;
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: capitalize;
-      }
-
-      .stock.in {
-        background: rgba(88, 214, 141, 0.18);
-        color: #91f0b6;
-      }
-
-      .stock.out {
-        background: rgba(255, 118, 117, 0.18);
-        color: #ffb1ad;
-      }
-
-      .stock.unknown {
-        background: rgba(255, 255, 255, 0.12);
-        color: rgba(247, 251, 251, 0.78);
-      }
-
       .keg-stage {
         position: relative;
         min-height: 455px;
@@ -317,6 +299,33 @@ class PerfectDraftTaproomCard extends HTMLElement {
         height: 430px;
         position: relative;
         filter: drop-shadow(0 20px 26px rgba(0, 0, 0, 0.42));
+      }
+
+      .machine[data-tooltip]::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% - 74px);
+        width: min(260px, calc(100vw - 48px));
+        max-width: 260px;
+        transform: translate(-50%, 8px);
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: rgba(5, 12, 13, 0.96);
+        color: #f7fbfb;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.36), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        font-size: 0.74rem;
+        line-height: 1.3;
+        white-space: pre-line;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.16s ease, transform 0.16s ease;
+        z-index: 20;
+      }
+
+      .machine[data-tooltip]:hover::after {
+        opacity: 1;
+        transform: translate(-50%, 0);
       }
 
       .tap-handle {
@@ -538,61 +547,6 @@ class PerfectDraftTaproomCard extends HTMLElement {
         font-weight: 700;
       }
 
-      .target-badge {
-        position: absolute;
-        right: 32px;
-        bottom: 72px;
-        display: grid;
-        place-items: center;
-        align-content: center;
-        width: 40px;
-        height: 31px;
-        border-radius: 6px;
-        background: rgba(5, 15, 17, 0.82);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
-        overflow: hidden;
-      }
-
-      .target-badge::before {
-        content: "";
-        position: absolute;
-        inset: auto 0 0;
-        height: 4px;
-        background: #45c9a9;
-        opacity: 0.9;
-      }
-
-      .target-badge.warm::before {
-        background: #ffb84d;
-      }
-
-      .target-badge.cold::before {
-        background: #79b8ff;
-      }
-
-      .target-badge.unknown::before {
-        background: rgba(255, 255, 255, 0.28);
-      }
-
-      .target-badge span,
-      .target-badge small {
-        position: relative;
-        z-index: 1;
-      }
-
-      .target-badge span {
-        font-weight: 800;
-        font-size: 0.74rem;
-        line-height: 1;
-      }
-
-      .target-badge small {
-        color: rgba(255, 255, 255, 0.76);
-        font-size: 0.47rem;
-        text-transform: uppercase;
-      }
-
       .drip-tray {
         position: absolute;
         left: 50%;
@@ -646,7 +600,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .stats {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         margin-top: 10px;
       }
@@ -710,12 +664,6 @@ class PerfectDraftTaproomCard extends HTMLElement {
         width: 66px;
         height: 54px;
         bottom: 52px;
-      }
-
-      ha-card.compact .target-badge {
-        width: 36px;
-        height: 28px;
-        bottom: 60px;
       }
 
       @media (max-width: 360px) {

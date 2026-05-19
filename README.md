@@ -12,6 +12,7 @@ The card presents the loaded beer as a PerfectDraft-style pump with a front view
 - Current and target temperature displayed as part of the pump face
 - Freshness days remaining
 - Loaded beer name, image, brewery/style/ABV attributes
+- Hover beer metadata on the pump for stock, price, serving notes, reviews, and pairings
 - Auto-discovery for Taproom entities, with manual entity overrides
 - Visual card editor
 - Theme-aware styling
@@ -28,17 +29,17 @@ The card presents the loaded beer as a PerfectDraft-style pump with a front view
 HACS serves the card from:
 
 ```text
-/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js?v=5
+/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js?v=6
 ```
 
-The trailing `v=5` is intentional. Increment it when updating the card if Home Assistant or the browser keeps serving an older cached copy.
+The trailing `v=6` is intentional. Increment it when updating the card if Home Assistant or the browser keeps serving an older cached copy.
 
 ### Manual
 
 Copy `perfectdraft-taproom-card.js` to your Home Assistant `www` directory and add it as a dashboard resource:
 
 ```yaml
-url: /local/perfectdraft-taproom-card.js?v=5
+url: /local/perfectdraft-taproom-card.js?v=6
 type: module
 ```
 
@@ -79,5 +80,5 @@ This repository is structured as a HACS Dashboard plugin. `hacs.json` points HAC
 
 When releasing a visual/card update, bump both:
 
-- The `?v=5` query string shown in the resource URL examples.
+- The `?v=6` query string shown in the resource URL examples.
 - `PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER` near the top of `perfectdraft-taproom-card.js`.
