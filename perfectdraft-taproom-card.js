@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.8";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.9";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 9;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 10;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -12,6 +12,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
       type: "custom:perfectdraft-taproom-card",
       show_pump: true,
       show_details: true,
+      show_remaining: true,
+      show_freshness: true,
       show_last_pour: true,
       show_empty_eta: true,
       show_temperature_status: true,
@@ -29,6 +31,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
     this._config = {
       show_pump: true,
       show_details: true,
+      show_remaining: true,
+      show_freshness: true,
       show_last_pour: true,
       show_empty_eta: true,
       show_temperature_status: true,
@@ -39,7 +43,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
       compact: false,
       ...config,
     };
-    this._render();
+    this._render(true);
   }
 
   set hass(hass) {
@@ -74,6 +78,30 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
   _controlEntity(configKey, domain, matchers, rejects = []) {
     return this._entity(configKey, matchers, rejects, domain);
+  }
+
+  _stateSignature() {
+    if (!this._hass?.states) return "";
+    return Object.values(this._hass.states)
+      .filter((entity) => {
+        const name = `${entity.entity_id} ${entity.attributes?.friendly_name || ""}`.toLowerCase();
+        return name.includes("perfectdraft") || name.includes("taproom");
+      })
+      .map((entity) => [
+        entity.entity_id,
+        entity.state,
+        entity.last_changed,
+        entity.attributes?.friendly_name,
+        entity.attributes?.entity_picture,
+        entity.attributes?.image_url,
+        entity.attributes?.keg_inserted_at,
+        entity.attributes?.stock_state,
+        entity.attributes?.price,
+        entity.attributes?.price_per_pint,
+        entity.attributes?.review_rating,
+        entity.attributes?.review_count,
+      ].join("|"))
+      .join(";");
   }
 
   _stateNumber(entity, fallback = undefined) {
@@ -169,6 +197,49 @@ class PerfectDraftTaproomCard extends HTMLElement {
     `;
   }
 
+  _renderStats({
+    currentTemp,
+    targetTemp,
+    temperatureStatus,
+    emptyEta,
+    lastPourEntity,
+    level,
+    freshness,
+  }) {
+    const rows = [];
+    if (this._config.show_details) {
+      rows.push(`<div><span>Current</span><strong>${this._formatNumber(currentTemp, "°C", 0)}</strong></div>`);
+      rows.push(`<div><span>Target</span><strong>${this._formatNumber(targetTemp, "°C", 0)}</strong></div>`);
+    }
+    if (!this._config.show_pump && this._config.show_remaining) {
+      rows.push(`<div><span>Remaining</span><strong>${this._formatNumber(level, "%", 0)}</strong></div>`);
+    }
+    if (!this._config.show_pump && this._config.show_freshness) {
+      rows.push(`<div><span>Freshness</span><strong>${Number.isFinite(freshness) ? `${Math.max(0, Math.round(freshness))} d` : "—"}</strong></div>`);
+    }
+    if (this._config.show_temperature_status) {
+      rows.push(`
+        <div class="status-${temperatureStatus.key}">
+          <span>Status</span>
+          <strong><ha-icon icon="${temperatureStatus.icon}"></ha-icon>${temperatureStatus.label}</strong>
+        </div>
+      `);
+    }
+    if (this._config.show_empty_eta) {
+      rows.push(`<div><span>Keg empty</span><strong>${this._escape(emptyEta)}</strong></div>`);
+    }
+    if (this._config.show_last_pour) {
+      rows.push(`
+        <div>
+          <span>Last pour</span>
+          <strong>${this._escape(this._formatState(lastPourEntity))}</strong>
+          <small>${this._escape(this._formatDateTime(lastPourEntity))}</small>
+        </div>
+      `);
+    }
+    return rows.length ? `<section class="stats">${rows.join("")}</section>` : "";
+  }
+
   _fireAction() {
     const event = new CustomEvent("hass-more-info", {
       bubbles: true,
@@ -178,8 +249,15 @@ class PerfectDraftTaproomCard extends HTMLElement {
     this.dispatchEvent(event);
   }
 
-  _render() {
+  _render(force = false) {
     if (!this._hass || !this._config) return;
+
+    const renderKey = JSON.stringify({
+      config: this._config,
+      states: this._stateSignature(),
+    });
+    if (!force && renderKey === this._renderKey) return;
+    this._renderKey = renderKey;
 
     const beer = this._entity("beer_entity", ["beer"], ["favorite", "available"]);
     const levelEntity = this._entity("level_entity", ["keg", "remaining"]);
@@ -252,28 +330,15 @@ class PerfectDraftTaproomCard extends HTMLElement {
             </section>
           ` : ""}
 
-          ${this._config.show_details ? `
-            <section class="stats">
-              <div><span>Current</span><strong>${this._formatNumber(currentTemp, "°C", 0)}</strong></div>
-              <div><span>Target</span><strong>${this._formatNumber(targetTemp, "°C", 0)}</strong></div>
-              ${this._config.show_temperature_status ? `
-                <div class="status-${temperatureStatus.key}">
-                  <span>Status</span>
-                  <strong><ha-icon icon="${temperatureStatus.icon}"></ha-icon>${temperatureStatus.label}</strong>
-                </div>
-              ` : ""}
-              ${this._config.show_empty_eta ? `
-                <div><span>Keg empty</span><strong>${this._escape(emptyEta)}</strong></div>
-              ` : ""}
-              ${this._config.show_last_pour ? `
-                <div>
-                  <span>Last pour</span>
-                  <strong>${this._escape(this._formatState(lastPourEntity))}</strong>
-                  <small>${this._escape(this._formatDateTime(lastPourEntity))}</small>
-                </div>
-              ` : ""}
-            </section>
-          ` : ""}
+          ${this._renderStats({
+            currentTemp,
+            targetTemp,
+            temperatureStatus,
+            emptyEta,
+            lastPourEntity,
+            level,
+            freshness,
+          })}
 
           ${this._renderPourHistory(lastPourEntity)}
           ${this._renderControls()}
@@ -430,6 +495,12 @@ class PerfectDraftTaproomCard extends HTMLElement {
         display: block;
       }
 
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
       ha-card {
         --freshness-color: #45c9a9;
         overflow: hidden;
@@ -450,8 +521,10 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .card-button {
         width: 100%;
+        max-width: 100%;
         display: block;
         padding: 18px;
+        overflow: hidden;
         border: 0;
         background: transparent;
         color: inherit;
@@ -824,13 +897,14 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         margin-top: 10px;
       }
 
       .stats div {
         min-width: 0;
+        min-height: 78px;
         padding: 9px 10px;
         border-radius: 8px;
         background: rgba(255, 255, 255, 0.07);
@@ -845,11 +919,14 @@ class PerfectDraftTaproomCard extends HTMLElement {
       }
 
       .stats strong {
-        display: block;
+        display: flex;
+        align-items: center;
         margin-top: 3px;
         color: inherit;
         font-size: 0.98rem;
         line-height: 1.1;
+        min-width: 0;
+        overflow-wrap: anywhere;
       }
 
       .stats strong ha-icon {
@@ -916,7 +993,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
       .controls {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         margin-top: 10px;
       }
@@ -925,6 +1002,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
       .control-pill,
       .stepper {
         min-height: 42px;
+        min-width: 0;
         border-radius: 8px;
         background: rgba(255, 255, 255, 0.07);
         color: inherit;
@@ -940,6 +1018,15 @@ class PerfectDraftTaproomCard extends HTMLElement {
         font: inherit;
         font-weight: 700;
         cursor: pointer;
+        overflow: hidden;
+      }
+
+      .control-button span,
+      .control-pill span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .control-button ha-icon,
@@ -956,6 +1043,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
         padding: 0 10px;
         color: rgba(247, 251, 251, 0.78);
         font-size: 0.86rem;
+        min-width: 0;
       }
 
       .stepper {
@@ -963,6 +1051,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
         grid-template-columns: 38px minmax(0, 1fr) 38px;
         align-items: center;
         overflow: hidden;
+        min-width: 0;
       }
 
       .stepper button {
@@ -1070,6 +1159,8 @@ const CARD_EDITOR_SCHEMA = [
   { name: "name", selector: { text: {} } },
   { name: "show_pump", selector: { boolean: {} } },
   { name: "show_details", selector: { boolean: {} } },
+  { name: "show_remaining", selector: { boolean: {} } },
+  { name: "show_freshness", selector: { boolean: {} } },
   { name: "show_last_pour", selector: { boolean: {} } },
   { name: "show_empty_eta", selector: { boolean: {} } },
   { name: "show_temperature_status", selector: { boolean: {} } },
@@ -1084,6 +1175,8 @@ const CARD_EDITOR_LABELS = {
   name: "Card title",
   show_pump: "Show pump/keg view",
   show_details: "Show temperature row",
+  show_remaining: "Show remaining when pump is hidden",
+  show_freshness: "Show freshness when pump is hidden",
   show_last_pour: "Show last pour",
   show_empty_eta: "Show keg empty ETA",
   show_temperature_status: "Show temperature status",
@@ -1099,6 +1192,8 @@ class PerfectDraftTaproomCardEditor extends HTMLElement {
     this._config = {
       show_pump: true,
       show_details: true,
+      show_remaining: true,
+      show_freshness: true,
       show_last_pour: true,
       show_empty_eta: true,
       show_temperature_status: true,
