@@ -33,17 +33,17 @@ The card presents the loaded beer as a PerfectDraft-style pump with a front view
 HACS serves the card from:
 
 ```text
-/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js?v=11
+/hacsfiles/hass-perfectdraft-taproom-card/perfectdraft-taproom-card.js?v=12
 ```
 
-The trailing `v=11` is intentional. Increment it when updating the card if Home Assistant or the browser keeps serving an older cached copy.
+The trailing `v=12` is intentional. Increment it when updating the card if Home Assistant or the browser keeps serving an older cached copy.
 
 ### Manual
 
 Copy `perfectdraft-taproom-card.js` to your Home Assistant `www` directory and add it as a dashboard resource:
 
 ```yaml
-url: /local/perfectdraft-taproom-card.js?v=11
+url: /local/perfectdraft-taproom-card.js?v=12
 type: module
 ```
 
@@ -55,7 +55,7 @@ type: custom:perfectdraft-taproom-card
 
 ## Configuration
 
-The visual editor uses auto-discovery and only exposes display switches. For unusual setups, entities can still be overridden in YAML:
+The visual editor uses auto-discovery by default. Entity overrides are available in its collapsible advanced settings, and can also be set in YAML:
 
 ```yaml
 type: custom:perfectdraft-taproom-card
@@ -109,5 +109,5 @@ This repository is structured as a HACS Dashboard plugin. `hacs.json` points HAC
 
 When releasing a visual/card update, bump both:
 
-- The `?v=11` query string shown in the resource URL examples.
+- The `?v=12` query string shown in the resource URL examples.
 - `PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER` near the top of `perfectdraft-taproom-card.js`.

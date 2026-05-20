@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.2.0";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.2.1";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 11;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 12;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -1212,6 +1212,24 @@ const CARD_EDITOR_SCHEMA = [
   { name: "show_controls", selector: { boolean: {} } },
 ];
 
+const CARD_EDITOR_ADVANCED_SCHEMA = [
+  { name: "beer_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "level_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "keg_volume_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "pints_remaining_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "temperature_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "target_temperature_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "freshness_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "last_pour_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "last_pour_pints_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "mode_entity", selector: { entity: { domain: "sensor" } } },
+  { name: "apply_ideal_button_entity", selector: { entity: { domain: "button" } } },
+  { name: "refresh_metadata_button_entity", selector: { entity: { domain: "button" } } },
+  { name: "eco_mode_entity", selector: { entity: { domain: "switch" } } },
+  { name: "mode_select_entity", selector: { entity: { domain: "select" } } },
+  { name: "target_temperature_control_entity", selector: { entity: { domain: "number" } } },
+];
+
 const CARD_EDITOR_LABELS = {
   name: "Card title",
   volume_unit: "Volume display",
@@ -1227,6 +1245,21 @@ const CARD_EDITOR_LABELS = {
   color_freshness_warning: "Colour freshness warning",
   compact: "Compact mode",
   show_controls: "Show controls",
+  beer_entity: "Beer entity",
+  level_entity: "Keg remaining percent entity",
+  keg_volume_entity: "Keg volume litres entity",
+  pints_remaining_entity: "Pints remaining entity",
+  temperature_entity: "Current temperature entity",
+  target_temperature_entity: "Target temperature entity",
+  freshness_entity: "Freshness entity",
+  last_pour_entity: "Last pour metric entity",
+  last_pour_pints_entity: "Last pour pints entity",
+  mode_entity: "Mode sensor entity",
+  apply_ideal_button_entity: "Apply ideal temperature button",
+  refresh_metadata_button_entity: "Refresh metadata button",
+  eco_mode_entity: "Eco mode switch",
+  mode_select_entity: "Mode select",
+  target_temperature_control_entity: "Target temperature number",
 };
 
 class PerfectDraftTaproomCardEditor extends HTMLElement {
@@ -1260,17 +1293,44 @@ class PerfectDraftTaproomCardEditor extends HTMLElement {
     this.innerHTML = `
       <style>
         .editor {
+          display: grid;
+          gap: 16px;
+        }
+        details {
+          border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.24));
+          padding-top: 12px;
+        }
+        summary {
+          cursor: pointer;
+          color: var(--primary-text-color);
+          font-weight: 600;
+          padding: 6px 0 12px;
+        }
+        .advanced-form {
           display: block;
         }
       </style>
-      <ha-form class="editor"></ha-form>
+      <div class="editor">
+        <ha-form class="main-form"></ha-form>
+        <details class="advanced" ${this._advancedOpen ? "open" : ""}>
+          <summary>Advanced entity overrides</summary>
+          <ha-form class="advanced-form"></ha-form>
+        </details>
+      </div>
     `;
 
-    const form = this.querySelector("ha-form");
+    this.querySelector(".advanced")?.addEventListener("toggle", (event) => {
+      this._advancedOpen = event.currentTarget.open;
+    });
+    this._setupForm(this.querySelector(".main-form"), CARD_EDITOR_SCHEMA);
+    this._setupForm(this.querySelector(".advanced-form"), CARD_EDITOR_ADVANCED_SCHEMA);
+  }
+
+  _setupForm(form, schema) {
     form.hass = this._hass;
     form.data = this._config;
-    form.schema = CARD_EDITOR_SCHEMA;
-    form.computeLabel = (schema) => CARD_EDITOR_LABELS[schema.name] || schema.name;
+    form.schema = schema;
+    form.computeLabel = (field) => CARD_EDITOR_LABELS[field.name] || field.name;
     form.addEventListener("value-changed", (event) => this._changed(event));
   }
 
