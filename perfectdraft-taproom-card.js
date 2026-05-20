@@ -1,6 +1,6 @@
-const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.1.9";
+const PERFECTDRAFT_TAPROOM_CARD_VERSION = "0.2.0";
 // Increment this number whenever Home Assistant/browser caches need to fetch a fresh card file.
-const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 10;
+const PERFECTDRAFT_TAPROOM_CARD_CACHE_BUSTER = 11;
 
 class PerfectDraftTaproomCard extends HTMLElement {
   static getConfigElement() {
@@ -10,6 +10,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
   static getStubConfig() {
     return {
       type: "custom:perfectdraft-taproom-card",
+      volume_unit: "metric",
       show_pump: true,
       show_details: true,
       show_remaining: true,
@@ -40,6 +41,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
       show_beer_tooltip: true,
       color_freshness_warning: true,
       show_controls: false,
+      volume_unit: "metric",
       compact: false,
       ...config,
     };
@@ -98,6 +100,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
         entity.attributes?.stock_state,
         entity.attributes?.price,
         entity.attributes?.price_per_pint,
+        entity.attributes?.unit_of_measurement,
         entity.attributes?.review_rating,
         entity.attributes?.review_count,
       ].join("|"))
@@ -110,6 +113,29 @@ class PerfectDraftTaproomCard extends HTMLElement {
     }
     const value = Number(entity.state);
     return Number.isFinite(value) ? value : fallback;
+  }
+
+  _volumeUnit() {
+    return this._config?.volume_unit === "imperial" ? "imperial" : "metric";
+  }
+
+  _volumeEntity(type) {
+    const imperial = this._volumeUnit() === "imperial";
+    if (type === "remaining") {
+      return imperial
+        ? this._entity("pints_remaining_entity", ["pints", "remaining"], [], "sensor")
+          || this._entity("keg_volume_entity", ["keg", "volume"], [], "sensor")
+        : this._entity("keg_volume_entity", ["keg", "volume"], [], "sensor")
+          || this._entity("pints_remaining_entity", ["pints", "remaining"], [], "sensor");
+    }
+    if (type === "last_pour") {
+      return imperial
+        ? this._entity("last_pour_pints_entity", ["last", "pour", "pints"], [], "sensor")
+          || this._entity("last_pour_entity", ["last", "pour"], ["pints"], "sensor")
+        : this._entity("last_pour_entity", ["last", "pour"], ["pints"], "sensor")
+          || this._entity("last_pour_pints_entity", ["last", "pour", "pints"], [], "sensor");
+    }
+    return undefined;
   }
 
   _formatNumber(value, suffix = "", precision = 0) {
@@ -203,16 +229,17 @@ class PerfectDraftTaproomCard extends HTMLElement {
     temperatureStatus,
     emptyEta,
     lastPourEntity,
+    remainingVolumeEntity,
     level,
     freshness,
   }) {
     const rows = [];
     if (this._config.show_details) {
-      rows.push(`<div><span>Current</span><strong>${this._formatNumber(currentTemp, "°C", 0)}</strong></div>`);
-      rows.push(`<div><span>Target</span><strong>${this._formatNumber(targetTemp, "°C", 0)}</strong></div>`);
+      rows.push(`<div><span>Current</span><strong>${this._formatNumber(currentTemp, "°C", 1)}</strong></div>`);
+      rows.push(`<div><span>Target</span><strong>${this._formatNumber(targetTemp, "°C", 1)}</strong></div>`);
     }
     if (!this._config.show_pump && this._config.show_remaining) {
-      rows.push(`<div><span>Remaining</span><strong>${this._formatNumber(level, "%", 0)}</strong></div>`);
+      rows.push(`<div><span>Remaining</span><strong>${this._escape(this._formatState(remainingVolumeEntity, this._formatNumber(level, "%", 0)))}</strong></div>`);
     }
     if (!this._config.show_pump && this._config.show_freshness) {
       rows.push(`<div><span>Freshness</span><strong>${Number.isFinite(freshness) ? `${Math.max(0, Math.round(freshness))} d` : "—"}</strong></div>`);
@@ -264,7 +291,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
     const tempEntity = this._entity("temperature_entity", ["temperature"], ["target", "eco", "ideal"]);
     const targetEntity = this._entity("target_temperature_entity", ["target", "temperature"]);
     const freshnessEntity = this._entity("freshness_entity", ["keg", "freshness"]);
-    const lastPourEntity = this._entity("last_pour_entity", ["last", "pour"]);
+    const lastPourEntity = this._volumeEntity("last_pour");
+    const remainingVolumeEntity = this._volumeEntity("remaining");
     const modeEntity = this._entity("mode_entity", ["mode"]);
 
     const level = Math.max(0, Math.min(100, this._stateNumber(levelEntity, 0)));
@@ -312,8 +340,8 @@ class PerfectDraftTaproomCard extends HTMLElement {
               <div class="machine-shell">
                 <div class="machine-highlight"></div>
                 <div class="display-panel">
-                  <span>${this._formatNumber(currentTemp, "°", 0)}</span>
-                  <small>${this._formatNumber(targetTemp, "°", 0)} target</small>
+                  <span>${this._formatNumber(currentTemp, "°", 1)}</span>
+                  <small>${this._formatNumber(targetTemp, "°", 1)} target</small>
                 </div>
                 <div class="view-window">
                   <div class="window-fill"></div>
@@ -336,6 +364,7 @@ class PerfectDraftTaproomCard extends HTMLElement {
             temperatureStatus,
             emptyEta,
             lastPourEntity,
+            remainingVolumeEntity,
             level,
             freshness,
           })}
@@ -1157,6 +1186,18 @@ class PerfectDraftTaproomCard extends HTMLElement {
 
 const CARD_EDITOR_SCHEMA = [
   { name: "name", selector: { text: {} } },
+  {
+    name: "volume_unit",
+    selector: {
+      select: {
+        mode: "dropdown",
+        options: [
+          { value: "metric", label: "Metric (litres / mL)" },
+          { value: "imperial", label: "Imperial (pints)" },
+        ],
+      },
+    },
+  },
   { name: "show_pump", selector: { boolean: {} } },
   { name: "show_details", selector: { boolean: {} } },
   { name: "show_remaining", selector: { boolean: {} } },
@@ -1173,6 +1214,7 @@ const CARD_EDITOR_SCHEMA = [
 
 const CARD_EDITOR_LABELS = {
   name: "Card title",
+  volume_unit: "Volume display",
   show_pump: "Show pump/keg view",
   show_details: "Show temperature row",
   show_remaining: "Show remaining when pump is hidden",
@@ -1190,6 +1232,7 @@ const CARD_EDITOR_LABELS = {
 class PerfectDraftTaproomCardEditor extends HTMLElement {
   setConfig(config) {
     this._config = {
+      volume_unit: "metric",
       show_pump: true,
       show_details: true,
       show_remaining: true,
